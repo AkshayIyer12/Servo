@@ -4,6 +4,7 @@ let server = net.createServer(socket => {
   console.log('client connected')
   socket.on('end', () => console.log('client disconnected'))
   socket.on('data', data => parseRequest(data))
+  socket.write(createResponse())
 })
 
 server.on('error', err => {
@@ -38,3 +39,12 @@ const parseStatusLine = data => {
   message.method = statusLine[0]
   message.httpVersion = statusLine[2].split('/')[1]
 }
+
+const createResponse = () => `HTTP/1.1 200 OK   
+Date: ${new Date().toUTCString()}   
+Server: Inspy1545   
+Content-Length: 13    
+Content-Type: text/plain       
+
+Hello World   
+`
