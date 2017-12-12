@@ -19,9 +19,9 @@ let message = {
 }
 
 const parseRequest = data => {
-  let responseMessage = data.toString('utf-8').trim().split('\r\n')
-  parseStatusLine(responseMessage[0])
-  let headers = responseMessage.slice(1)
+  let requestMessage = data.toString('utf-8').trim().split('\r\n')
+  parseStatusLine(requestMessage[0])
+  let headers = requestMessage.slice(1)
   for (let key of headers) {
     let findColon = key.indexOf(':')
     message.headers[key.slice(0, findColon)] = key.slice(findColon + 1, key.length)
