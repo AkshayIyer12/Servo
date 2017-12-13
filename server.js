@@ -4,7 +4,6 @@ let server = net.createServer(socket => {
   console.log('client connected')
   socket.on('end', () => console.log('client disconnected'))
   socket.on('data', data => parseRequest(data))
-  socket.write(createResponse())
 })
 
 server.on('error', err => {
@@ -13,38 +12,39 @@ server.on('error', err => {
 
 server.listen(3000, () => console.log('server bound'))
 
-let message = {
-  headers: {},
-  httpVersion: '',
-  method: ''
-}
-
 const parseRequest = data => {
-  let requestMessage = data.toString('utf-8').trim().split('\r\n')
-  parseStatusLine(requestMessage[0])
-  let headers = requestMessage.slice(1)
-  parseHeaders(headers)
+  let message = {}
+  let newData = data.toString('utf-8')
+  let statusLineEnd = newData.indexOf('\r\n')
+  let headerLineEnd = newData.indexOf('\r\n\r\n')
+  let rawStatusLine = newData.slice(0, statusLineEnd)
+  let rawHeaders = newData.slice(statusLineEnd + 1, headerLineEnd)
+  let {method, version, URI} = parseStatusLine(rawStatusLine)
+  let header = parseHeaders(rawHeaders)
+  let body = newData.slice(headerLineEnd + 1, newData.length).trim()
+  message.method = method
+  message.httpVersion = version
+  message.header = header
+  message.url = URI
+  message.body = body
+  return message
 }
 
 const parseHeaders = headers => {
-  for (let key of headers) {
+  let arr = headers.trim().split('\r\n')
+  let header = {}
+  for (let key of arr) {
     let findColon = key.indexOf(':')
-    message.headers[key.slice(0, findColon)] = key.slice(findColon + 1,
+    header[key.slice(0, findColon)] = key.slice(findColon + 1,
       key.length).trim()
   }
+  return header
 }
 
 const parseStatusLine = data => {
   let statusLine = data.split(' ')
-  message.method = statusLine[0]
-  message.httpVersion = statusLine[2].split('/')[1]
+  let method = statusLine[0]
+  let URI = statusLine[1]
+  let version = statusLine[2].split('/')[1]
+  return {method, URI, version}
 }
-
-const createResponse = () => `HTTP/1.1 200 OK   
-Date: ${new Date().toUTCString()}   
-Server: Inspy1545   
-Content-Length: 13    
-Content-Type: text/plain       
-
-Hello World   
-`
