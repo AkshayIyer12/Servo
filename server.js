@@ -1,16 +1,19 @@
 const net = require('net')
 
-let server = net.createServer(socket => {
-  console.log('client connected')
-  socket.on('end', () => console.log('client disconnected'))
-  socket.on('data', data => parseRequest(data))
-})
+const routes = {
+  GET: {},
+  POST: {}
+}
 
-server.on('error', err => {
-  throw err
-})
-
-server.listen(3000, () => console.log('server bound'))
+const fireServer = port => {
+  let server = net.createServer(socket => {
+    console.log('client connected')
+    socket.on('end', () => console.log('Client Disconnected'))
+    socket.on('data', data => print(createResponse(parseRequest(data)), socket))
+  })
+  server.on('error', err => { throw err })
+  server.listen(port, () => console.log(`Server bound on ${port}`))
+}
 
 const parseRequest = data => {
   let message = {}
@@ -19,12 +22,16 @@ const parseRequest = data => {
   let headerLineEnd = newData.indexOf('\r\n\r\n')
   let rawStatusLine = newData.slice(0, statusLineEnd)
   let rawHeaders = newData.slice(statusLineEnd + 1, headerLineEnd)
-  let {method, version, URI} = parseStatusLine(rawStatusLine)
+  let {
+    method,
+    version,
+    URI
+  } = parseStatusLine(rawStatusLine)
   let header = parseHeaders(rawHeaders)
   let body = newData.slice(headerLineEnd + 1, newData.length).trim()
   message.method = method
   message.httpVersion = version
-  message.header = header
+  message.headers = header
   message.url = URI
   message.body = body
   return message
@@ -46,5 +53,30 @@ const parseStatusLine = data => {
   let method = statusLine[0]
   let URI = statusLine[1]
   let version = statusLine[2].split('/')[1]
-  return {method, URI, version}
+  return {
+    method,
+    URI,
+    version
+  }
+}
+
+const createResponse = (message) => {
+  let res = {}
+  if (message.method === 'GET') routes[message.method][message.url](message, res)
+  return createResMsg(message, res)
+}
+
+const createResMsg = (msg, res) => {
+  return `HTTP/${msg.httpVersion} 200 OK\r\nContent-Length: ${res.body.length}\r\nContent-Type: text/plain\r\n\r\n${res.body}`
+}
+
+const addRoutes = (method, route, cb) => {
+  routes[method][route] = cb
+}
+
+const print = (value, socket) => socket.write(value)
+
+module.exports = {
+  fireServer,
+  addRoutes
 }
