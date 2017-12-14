@@ -1,13 +1,11 @@
 const net = require('net')
-const fs = require('fs')
-const path = require('path')
-
+const Response = require('./response')
 const routes = {
   GET: {},
   POST: {}
 }
 
-const fireServer = port => {
+const startServer = port => {
   let server = net.createServer(socket => {
     console.log('client connected')
     socket.on('end', () => console.log('Client Disconnected'))
@@ -62,16 +60,14 @@ const parseStatusLine = data => {
   }
 }
 
-const createResponse = (IncomingMessage) => {
-  let response = {}
-  if (IncomingMessage.method === 'GET') {
-    routes[IncomingMessage.method][IncomingMessage.url](IncomingMessage, response)
+const createResponse = (req) => {
+  let res = new Response()
+  if (req.method === 'GET') {
+    routes[req.method][req.url](req, res)
   }
-  return createResMsg(IncomingMessage, response)
-}
-
-const createResMsg = (msg, res) => {
-  return `HTTP/${msg.httpVersion} 200 OK\r\nContent-Length: ${res.body.length}\r\nContent-Type: text/plain\r\n\r\n${res.body}`
+  let result = res.giveResponse()
+  console.log(result)
+  return result
 }
 
 const addRoutes = (method, route, cb) => {
@@ -79,19 +75,11 @@ const addRoutes = (method, route, cb) => {
   return routes
 }
 
-const print = (value, socket) => socket.write(value)
-
-const serveStaticFiles = dir => {
-  return fs.readFileSync(path.join(__dirname, dir), 'utf-8', (err, data) => {
-    if (err) throw err
-    else {
-      return data
-    }
-  })
+const print = (value, socket) => {
+  socket.write(value)
 }
 
 module.exports = {
-  fireServer,
-  addRoutes,
-  serveStaticFiles
+  startServer,
+  addRoutes
 }
