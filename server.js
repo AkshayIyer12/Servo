@@ -1,4 +1,6 @@
 const net = require('net')
+const fs = require('fs')
+const path = require('path')
 
 const routes = {
   GET: {},
@@ -60,10 +62,12 @@ const parseStatusLine = data => {
   }
 }
 
-const createResponse = (message) => {
-  let res = {}
-  if (message.method === 'GET') routes[message.method][message.url](message, res)
-  return createResMsg(message, res)
+const createResponse = (IncomingMessage) => {
+  let response = {}
+  if (IncomingMessage.method === 'GET') {
+    routes[IncomingMessage.method][IncomingMessage.url](IncomingMessage, response)
+  }
+  return createResMsg(IncomingMessage, response)
 }
 
 const createResMsg = (msg, res) => {
@@ -72,11 +76,22 @@ const createResMsg = (msg, res) => {
 
 const addRoutes = (method, route, cb) => {
   routes[method][route] = cb
+  return routes
 }
 
 const print = (value, socket) => socket.write(value)
 
+const serveStaticFiles = dir => {
+  return fs.readFileSync(path.join(__dirname, dir), 'utf-8', (err, data) => {
+    if (err) throw err
+    else {
+      return data
+    }
+  })
+}
+
 module.exports = {
   fireServer,
-  addRoutes
+  addRoutes,
+  serveStaticFiles
 }
