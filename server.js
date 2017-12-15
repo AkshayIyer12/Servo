@@ -17,7 +17,7 @@ const startServer = port => {
 const parseRequest = data => {
   let message = {}
   let newData = data.toString('utf-8')
-  let [rawStatusLine, rawHeaders] = separateData(newData)
+  let [rawStatusLine, rawHeaders] = separateStatusHeader(newData)
   let {method, version, URI} = parseStatusLine(rawStatusLine)
   let header = parseHeaders(rawHeaders)
   message.method = method
@@ -27,7 +27,7 @@ const parseRequest = data => {
   return message
 }
 
-const separateData = data => {
+const separateStatusHeader = data => {
   let statusLineEnd = data.indexOf('\r\n')
   let headerLineEnd = data.indexOf('\r\n\r\n')
   let rawStatusLine = data.slice(0, statusLineEnd)
