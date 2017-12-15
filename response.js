@@ -1,5 +1,5 @@
 const path = require('path')
-const CRLF = '\n'
+const CRLF = '\r\n'
 const status = {
   200: 'OK',
   404: 'Not Found'
