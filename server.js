@@ -1,17 +1,14 @@
 const net = require('net')
 const Response = require('./response')
-// const path = require('path')
-// const fs = require('fs')
 const routes = {
   GET: {},
   POST: {}
 }
-// let flag = 0
 const startServer = port => {
   let server = net.createServer(socket => {
     console.log('client connected')
     socket.on('end', () => console.log('Client Disconnected'))
-    socket.on('data', data => print(createResponse(parseRequest(data)), socket))
+    socket.on('data', data => createResponse(parseRequest(data), socket))
   })
   server.on('error', err => { throw err })
   server.listen(port, () => console.log(`Server bound on ${port}`))
@@ -20,17 +17,13 @@ const startServer = port => {
 const parseRequest = data => {
   let message = {}
   let newData = data.toString('utf-8')
-  let [rawStatusLine, rawHeaders, body] = separateData(newData)
+  let [rawStatusLine, rawHeaders] = separateData(newData)
   let {method, version, URI} = parseStatusLine(rawStatusLine)
   let header = parseHeaders(rawHeaders)
-  // if (flag > 0) {
-  //   body = addStaticFile(URI)
-  // }
   message.method = method
   message.httpVersion = version
   message.headers = header
   message.url = URI
-  message.body = body
   return message
 }
 
@@ -39,8 +32,7 @@ const separateData = data => {
   let headerLineEnd = data.indexOf('\r\n\r\n')
   let rawStatusLine = data.slice(0, statusLineEnd)
   let rawHeaders = data.slice(statusLineEnd + 1, headerLineEnd)
-  let body = data.slice(headerLineEnd + 1, data.length)
-  return [rawStatusLine, rawHeaders, body]
+  return [rawStatusLine, rawHeaders]
 }
 
 const parseHeaders = headers => {
@@ -66,12 +58,11 @@ const parseStatusLine = data => {
   }
 }
 
-const createResponse = (req) => {
-  let res = new Response()
+const createResponse = (req, socket) => {
+  let res = new Response(socket)
   if (req.method === 'GET') {
     routes[req.method][req.url](req, res)
   }
-  return res.giveResponse()
 }
 
 const addRoutes = (method, route, cb) => {
@@ -79,23 +70,7 @@ const addRoutes = (method, route, cb) => {
   return routes
 }
 
-const print = (value, socket) => {
-  socket.write(value)
-}
-
-// const addStaticFile = (URI) => {
-//   flag++
-//   if (URI !== undefined) {
-//     let directory = path.join(__dirname, `public`, URI)
-//     return fs.readFileSync(directory, 'utf-8', (err, data) => {
-//       if (err) throw err
-//       else return data
-//     })
-//   }
-// }
-
 module.exports = {
   startServer,
   addRoutes
-//  addStaticFile
 }
