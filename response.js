@@ -26,11 +26,6 @@ class Response {
     self.statusCode = code
     self.statusMessage = status[code]
   }
-  setContentType (url) {
-    let self = this.message.headers
-    let ext = path.extname(url)
-    self['Content-Type'] = contentType[ext]
-  }
   setHeader (field, value) {
     let self = this.message.headers
     self[field] = value
@@ -65,4 +60,8 @@ class Response {
   }
 }
 
-module.exports = Response
+const createResponse = socket => new Response(socket)
+
+module.exports = {
+  createResponse
+}
