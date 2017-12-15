@@ -9,7 +9,7 @@ const contentType = {
   '.txt': 'text/plain'
 }
 class Response {
-  constructor () {
+  constructor (socket) {
     this.message = {
       version: '1.1',
       statusCode: 200,
@@ -19,6 +19,7 @@ class Response {
       },
       body: ''
     }
+    this.socket = socket
   }
   setStatus (code) {
     let self = this.message
@@ -30,25 +31,37 @@ class Response {
     let ext = path.extname(url)
     self['Content-Type'] = contentType[ext]
   }
-  setHeaders (field, value) {
+  setHeader (field, value) {
     let self = this.message.headers
     self[field] = value
   }
+  getHeaders () {
+    return this.message.headers
+  }
   giveResponse () {
-    let { version, statusCode, statusMessage, headers, body } = this.message, str = ''
+    let { version, statusCode, statusMessage, headers } = this.message, str = ''
     str += `HTTP/${version} ${statusCode} ${statusMessage}` + CRLF
     for (let i in headers) {
       if (headers.hasOwnProperty(i)) {
         str += `${i}: ${headers[i]}${CRLF}`
       }
     }
-    str += CRLF + body
+    str += CRLF
     return str
   }
-  send (data) {
+  write (data) {
     let self = this.message
-    self.body = data
+    self.body += data
     if (self.body !== undefined) self.headers['Content-Length'] = self.body.length
+  }
+  end () {
+    let str = this.giveResponse()
+    let self = this.message.headers
+    if (self['Content-Length']) str += this.message.body
+    if (self['Content-Type'] === undefined) {
+      self['Content-Type'] = contentType['.txt']
+    }
+    this.socket.write(str)
   }
 }
 
