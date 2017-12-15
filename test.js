@@ -1,7 +1,11 @@
 let {startServer, addRoutes} = require('./server')
 startServer(3000)
-// addStaticFile()
-addRoutes('GET', '/index', (req, res) => {
-  console.log('im here')
-  res.send('Hello World')
+addRoutes('GET', '/index.html', (req, res) => {
+  res.setContentType('./index.html')
+  res.write('<html>')
+  res.write('<body>')
+  res.write('<h1>Hello, World!</h1>')
+  res.write('</body>')
+  res.write('</html>')
+  res.end()
 })
