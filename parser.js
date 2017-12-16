@@ -1,14 +1,9 @@
 const parseRequest = data => {
-  let message = {}
   let newData = data.toString('utf-8')
   let [rawStatusLine, rawHeaders] = separateStatusHeader(newData)
   let {method, version, URI} = parseStatusLine(rawStatusLine)
   let header = parseHeaders(rawHeaders)
-  message.method = method
-  message.httpVersion = version
-  message.headers = header
-  message.url = URI
-  return message
+  return {method, version, header, URI}
 }
 
 const separateStatusHeader = data => {
