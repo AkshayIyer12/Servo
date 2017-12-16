@@ -1,4 +1,3 @@
-const path = require('path')
 const CRLF = '\r\n'
 const status = {
   200: 'OK',
