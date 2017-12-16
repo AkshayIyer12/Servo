@@ -1,11 +1,2 @@
-let {startServer, addRoutes} = require('./server')
-startServer(3000)
-addRoutes('GET', '/index.html', (req, res) => {
-  res.setContentType('./index.html')
-  res.write('<html>')
-  res.write('<body>')
-  res.write('<h1>Hello, World!</h1>')
-  res.write('</body>')
-  res.write('</html>')
-  res.end()
-})
+let http = require('./server')
+http.createServer(3000)
