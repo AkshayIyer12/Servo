@@ -1,14 +1,19 @@
 const net = require('net')
 // const {createResponse} = require('./response')
-// const {createRequest} = require('./request')
+const {createRequest} = require('./request')
 // let connectionHandler = null
 
 const createServer = port => {
   let server = net.createServer(socket => {
     console.log('client connected')
-    socket.on('end', () => console.log('Client Disconnected'))
-    socket.on('data', data => console.log(data.toString()))
-    socket.setTimeout(60000)
+    socket.on('end', () => {
+      console.log('Client Disconnected')
+    })
+    socket.on('data', data => {
+      console.log('Getting Data!')
+      console.log(data.toString())
+    })
+    socket.setTimeout(4000)
     socket.on('timeout', () => {
       console.log('Socket Timeout')
       socket.end()
