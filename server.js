@@ -1,15 +1,15 @@
 const net = require('net')
-// const {createResponse} = require('./response')
+const {createResponse} = require('./response')
 const {createRequest} = require('./request')
 // let connectionHandler = null
 
-const createServer = port => {
+const createServer = (port, requestHandler) => {
   let server = net.createServer(socket => {
     console.log('client connected')
     socket.on('end', () => {
       console.log('Client Disconnected')
     })
-    dataEventHandler(socket)
+    dataEventHandler(socket, requestHandler)
     socket.setTimeout(4000)
     socket.on('timeout', () => {
       console.log('Socket Timeout')
@@ -20,14 +20,14 @@ const createServer = port => {
   server.listen(port, () => console.log(`Server bound on ${port}`))
 }
 
-const dataEventHandler = socket => {
+const dataEventHandler = (socket, requestHandler) => {
   let bufferReq = Buffer.from([])
   let bufferBody = Buffer.from([])
   let flag = false
   let req
   socket.on('data', data => {
     if (flag) {
-      bufferBody = Buffer.concat([bufferReq, bufferReq], bufferReq.length + bufferBody.length)
+      bufferBody = Buffer.concat([bufferReq, bufferBody], bufferReq.length + bufferBody.length)
     }
     bufferReq = Buffer.concat([bufferReq, data], bufferReq.length + data.length)
     if (bufferReq.includes('\r\n\r\n')) {
@@ -39,6 +39,8 @@ const dataEventHandler = socket => {
       }
       if (req.headers['Content-Length'] === undefined ||
       parseInt(req.headers['Content-Length'] === bufferBody.length)) {
+        let res = createResponse(socket)
+        requestHandler(req, res)
         bufferReq = Buffer.from([])
         bufferBody = Buffer.from([])
         flag = false
