@@ -53,7 +53,7 @@ class Response {
     let self = this.message.headers
     if (self['Content-Length']) str += this.message.body
     if (self['Content-Type'] === undefined) {
-      self['Content-Type'] = contentType['.txt']
+      self['Content-Type'] = contentType['.html']
     }
     this.socket.write(str)
   }
