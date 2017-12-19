@@ -1,16 +1,19 @@
 const net = require('net')
 const {createResponse} = require('./response')
 const {createRequest} = require('./request')
-// let connectionHandler = null
+const routes = {
+  'GET': {},
+  'POST': {}
+}
 
-const createServer = (port, requestHandler) => {
+const createServer = (port) => {
   let server = net.createServer(socket => {
     console.log('client connected')
     socket.on('end', () => {
       console.log('Client Disconnected')
     })
-    dataEventHandler(socket, requestHandler)
-    socket.setTimeout(4000)
+    dataEventHandler(socket)
+    socket.setTimeout(6000)
     socket.on('timeout', () => {
       console.log('Socket Timeout')
       socket.end()
@@ -20,7 +23,7 @@ const createServer = (port, requestHandler) => {
   server.listen(port, () => console.log(`Server bound on ${port}`))
 }
 
-const dataEventHandler = (socket, requestHandler) => {
+const dataEventHandler = (socket) => {
   let bufferReq = Buffer.from([])
   let bufferBody = Buffer.from([])
   let flag = false
@@ -40,7 +43,7 @@ const dataEventHandler = (socket, requestHandler) => {
       if (req.headers['Content-Length'] === undefined ||
       parseInt(req.headers['Content-Length'] === bufferBody.length)) {
         let res = createResponse(socket)
-        requestHandler(req, res)
+        requestHandler(req, res, bufferBody.toString())
         bufferReq = Buffer.from([])
         bufferBody = Buffer.from([])
         flag = false
@@ -50,6 +53,15 @@ const dataEventHandler = (socket, requestHandler) => {
   })
 }
 
+const requestHandler = (req, res, body) => {
+  if (req.method === 'POST') req.body = body
+  routes[req.method][req.url](req, res)
+}
+
+const addRoutes = (method, route, cb) => {
+  routes[method][route] = cb
+}
+
 const getHeaderAndBody = data => {
   let header = data.slice(0, data.indexOf('\r\n\r\n'))
   let body = data.slice(data.indexOf('\r\n\r\n') + 4)
@@ -57,5 +69,6 @@ const getHeaderAndBody = data => {
 }
 
 module.exports = {
-  createServer
+  createServer,
+  addRoutes
 }
