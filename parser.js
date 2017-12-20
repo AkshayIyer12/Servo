@@ -19,7 +19,7 @@ const parseHeaders = headers => {
   let header = {}
   for (let key of arr) {
     let findColon = key.indexOf(':')
-    header[key.slice(0, findColon).toLowerCase()] = key.slice(findColon + 1,
+    header[key.slice(0, findColon)] = key.slice(findColon + 1,
       key.length).trim()
   }
   return header
