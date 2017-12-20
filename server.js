@@ -14,7 +14,7 @@ const createServer = (port) => {
       console.log('Client Disconnected')
     })
     dataEventHandler(socket)
-    socket.setTimeout(6000)
+    socket.setTimeout(20000)
     socket.on('timeout', () => {
       console.log('Socket Timeout')
       socket.end()
@@ -44,7 +44,8 @@ const dataEventHandler = (socket) => {
       if (parseInt(req.headers['Content-Length']) === bufferBody.length ||
       req.headers['Content-Length'] === undefined) {
         let res = createResponse(socket)
-        requestHandler(req, res, bufferBody.toString())
+        console.log(req)
+        requestHandler(req, res, bufferBody)
         bufferReq = Buffer.from([])
         bufferBody = Buffer.from([])
         flag = false
@@ -57,13 +58,16 @@ const dataEventHandler = (socket) => {
 const requestHandler = (req, res, body) => {
   if (req.method === 'POST') req.body = body
   if (req.headers['Content-Type'] === 'application/json') {
-    [req, res] = bodyParser.json(req, res)
+    [req, res] = bodyParser.parseJSON(req, res)
   }
   if (req.headers['Content-Type'] === 'application/x-www-form-urlencoded') {
-    [req, res] = bodyParser.urlEncoded(req, res)
+    [req, res] = bodyParser.parseURLEncoded(req, res)
   }
   if (req.headers['Content-Type'].slice(0, 19) === 'multipart/form-data') {
-    [req, res] = bodyParser.multipart(req, res)
+    [req, res] = bodyParser.parseMultipart(req, res)
+  }
+  if (req.headers['Content-Type'] === 'text/plain') {
+    [req, res] = bodyParser.parsePlainText(req, res)
   }
   routes[req.method][req.url](req, res)
 }
@@ -73,8 +77,10 @@ const addRoutes = (method, route, cb) => {
 }
 
 const getHeaderAndBody = data => {
+  console.log('Data is ', data.toString())
   let header = data.slice(0, data.indexOf('\r\n\r\n'))
   let body = data.slice(data.indexOf('\r\n\r\n') + 4)
+ // console.log(header.toString(), body.toString())
   return {header, body}
 }
 
