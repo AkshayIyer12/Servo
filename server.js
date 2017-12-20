@@ -1,7 +1,7 @@
 const net = require('net')
 const {createResponse} = require('./response')
 const {createRequest} = require('./request')
-const bodyParser = require('./bodyParser')
+const {parseJSON, parseURLEncoded, parseMultipart, parsePlainText} = require('./bodyParser')
 const routes = {
   'GET': {},
   'POST': {}
@@ -14,7 +14,7 @@ const createServer = (port) => {
       console.log('Client Disconnected')
     })
     dataEventHandler(socket)
-    socket.setTimeout(20000)
+    socket.setTimeout(50000)
     socket.on('timeout', () => {
       console.log('Socket Timeout')
       socket.end()
@@ -44,7 +44,6 @@ const dataEventHandler = (socket) => {
       if (parseInt(req.headers['Content-Length']) === bufferBody.length ||
       req.headers['Content-Length'] === undefined) {
         let res = createResponse(socket)
-        console.log(req)
         requestHandler(req, res, bufferBody)
         bufferReq = Buffer.from([])
         bufferBody = Buffer.from([])
@@ -56,20 +55,21 @@ const dataEventHandler = (socket) => {
 }
 
 const requestHandler = (req, res, body) => {
-  if (req.method === 'POST') req.body = body
-  if (req.headers['Content-Type'] === 'application/json') {
-    [req, res] = bodyParser.parseJSON(req, res)
+  if (req.method === 'POST') {
+    req.body = body
   }
-  if (req.headers['Content-Type'] === 'application/x-www-form-urlencoded') {
-    [req, res] = bodyParser.parseURLEncoded(req, res)
-  }
-  if (req.headers['Content-Type'].slice(0, 19) === 'multipart/form-data') {
-    [req, res] = bodyParser.parseMultipart(req, res)
-  }
-  if (req.headers['Content-Type'] === 'text/plain') {
-    [req, res] = bodyParser.parsePlainText(req, res)
-  }
+  [req] = parserFactory(parseJSON, parseURLEncoded, parsePlainText, parseMultipart)(req)
   routes[req.method][req.url](req, res)
+}
+
+const parserFactory = (...parsers) => req => {
+  return parsers.reduce((accum, parser) => {
+    let val = parser(req)
+    if (val !== null) {
+      accum.push(val)
+    }
+    return accum
+  }, [])
 }
 
 const addRoutes = (method, route, cb) => {
@@ -77,10 +77,8 @@ const addRoutes = (method, route, cb) => {
 }
 
 const getHeaderAndBody = data => {
-  console.log('Data is ', data.toString())
   let header = data.slice(0, data.indexOf('\r\n\r\n'))
   let body = data.slice(data.indexOf('\r\n\r\n') + 4)
- // console.log(header.toString(), body.toString())
   return {header, body}
 }
 
