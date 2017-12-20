@@ -57,8 +57,8 @@ const dataEventHandler = (socket) => {
 const requestHandler = (req, res, body) => {
   if (req.method === 'POST') {
     req.body = body
+    [req] = parserFactory(parseJSON, parseURLEncoded, parsePlainText, parseMultipart)(req)
   }
-  [req] = parserFactory(parseJSON, parseURLEncoded, parsePlainText, parseMultipart)(req)
   routes[req.method][req.url](req, res)
 }
 
