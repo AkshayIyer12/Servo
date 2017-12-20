@@ -1,6 +1,7 @@
 const net = require('net')
 const {createResponse} = require('./response')
 const {createRequest} = require('./request')
+const bodyParser = require('./bodyParser')
 const routes = {
   'GET': {},
   'POST': {}
@@ -40,8 +41,8 @@ const dataEventHandler = (socket) => {
         bufferBody = Buffer.from(body)
         flag = true
       }
-      if (req.headers['Content-Length'] === undefined ||
-      parseInt(req.headers['Content-Length'] === bufferBody.length)) {
+      if (parseInt(req.headers['Content-Length']) === bufferBody.length ||
+      req.headers['Content-Length'] === undefined) {
         let res = createResponse(socket)
         requestHandler(req, res, bufferBody.toString())
         bufferReq = Buffer.from([])
@@ -55,6 +56,15 @@ const dataEventHandler = (socket) => {
 
 const requestHandler = (req, res, body) => {
   if (req.method === 'POST') req.body = body
+  if (req.headers['Content-Type'] === 'application/json') {
+    [req, res] = bodyParser.json(req, res)
+  }
+  if (req.headers['Content-Type'] === 'application/x-www-form-urlencoded') {
+    [req, res] = bodyParser.urlEncoded(req, res)
+  }
+  if (req.headers['Content-Type'].slice(0, 19) === 'multipart/form-data') {
+    [req, res] = bodyParser.multipart(req, res)
+  }
   routes[req.method][req.url](req, res)
 }
 
