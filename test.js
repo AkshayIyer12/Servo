@@ -8,7 +8,7 @@ http.addRoutes('GET', '/', (req, res) => {
 })
 
 http.addRoutes('POST', '/', (req, res) => {
-  res.write('Hello Geekskool, there is a hackathon this saturday')
+  res.write('Hello Monday Morning!')
   res.setHeader('Content-Type', 'text/plain')
   res.end()
 })
