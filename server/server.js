@@ -1,7 +1,7 @@
 const net = require('net')
-const {createResponse} = require('./response')
-const {createRequest} = require('./request')
-const {parseJSON, parseURLEncoded, parseMultipart, parsePlainText} = require('./bodyParser')
+const {createResponse} = require('../modules/response')
+const {createRequest} = require('../modules/request')
+const {parseJSON, parseURLEncoded, parseMultipart, parsePlainText} = require('../parsers/bodyParser')
 const routes = {
   'GET': {},
   'POST': {}

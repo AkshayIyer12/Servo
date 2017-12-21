@@ -1,4 +1,4 @@
-const {parseRequest} = require('./parser')
+const {parseRequest} = require('../parsers/parser')
 class Request {
   constructor ({method, version, header, URI}) {
     this.method = method

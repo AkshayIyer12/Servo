@@ -1,4 +1,4 @@
-let http = require('./server')
+let http = require('../server/server')
 http.createServer(4000)
 
 http.addRoutes('GET', '/', (req, res) => {
