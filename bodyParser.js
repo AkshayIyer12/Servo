@@ -45,7 +45,8 @@ const getParts = req => {
   let tempBody = req.body
   let arr = []
   while (tempBody.indexOf('--' + boundary + '--') > 0) {
-    let chunk = tempBody.slice(boundary.length + 4, tempBody.indexOf('--' + boundary, boundary.length + 4))
+    let chunk = tempBody.slice(boundary.length + 4, tempBody.indexOf('--' +
+    boundary, boundary.length + 4))
     arr.push(chunk)
     tempBody = tempBody.slice(boundary.length + 4 + chunk.length)
   }
