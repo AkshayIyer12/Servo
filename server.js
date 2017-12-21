@@ -1,7 +1,7 @@
 const net = require('net')
-const {createResponse} = require('../modules/response')
-const {createRequest} = require('../modules/request')
-const {parseJSON, parseURLEncoded, parseMultipart, parsePlainText} = require('../parsers/bodyParser')
+const {createResponse} = require('./response')
+const {createRequest} = require('./request')
+const {parseJSON, parseURLEncoded, parseMultipart, parsePlainText} = require('./bodyParser')
 const routes = {
   'GET': {},
   'POST': {}
@@ -10,11 +10,11 @@ const routes = {
 const createServer = (port) => {
   let server = net.createServer(socket => {
     console.log('client connected')
+    dataEventHandler(socket)
     socket.on('end', () => {
       console.log('Client Disconnected')
     })
-    dataEventHandler(socket)
-    socket.setTimeout(20000)
+    socket.setTimeout(50000)
     socket.on('timeout', () => {
       console.log('Socket Timeout')
       socket.end()
@@ -30,6 +30,7 @@ const dataEventHandler = (socket) => {
   let flag = false
   let req
   socket.on('data', data => {
+    console.log(data)
     if (flag) {
       bufferBody = Buffer.concat([bufferBody, data], bufferBody.length + data.length)
     }
@@ -44,6 +45,7 @@ const dataEventHandler = (socket) => {
       if (parseInt(req.headers['Content-Length']) === bufferBody.length ||
       req.headers['Content-Length'] === undefined) {
         let res = createResponse(socket)
+
         requestHandler(req, res, bufferBody)
         bufferReq = Buffer.from([])
         bufferBody = Buffer.from([])
@@ -59,6 +61,7 @@ const requestHandler = (req, res, body) => {
     req.body = body
     req = parserFactory(parseJSON, parseURLEncoded, parsePlainText, parseMultipart)(req)
   }
+
   routes[req.method][req.url](req, res)
 }
 
