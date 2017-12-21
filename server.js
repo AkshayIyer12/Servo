@@ -14,7 +14,7 @@ const createServer = (port) => {
       console.log('Client Disconnected')
     })
     dataEventHandler(socket)
-    socket.setTimeout(50000)
+    socket.setTimeout(20000)
     socket.on('timeout', () => {
       console.log('Socket Timeout')
       socket.end()
@@ -31,7 +31,7 @@ const dataEventHandler = (socket) => {
   let req
   socket.on('data', data => {
     if (flag) {
-      bufferBody = Buffer.concat([bufferReq, bufferBody], bufferReq.length + bufferBody.length)
+      bufferBody = Buffer.concat([bufferBody, data], bufferBody.length + data.length)
     }
     bufferReq = Buffer.concat([bufferReq, data], bufferReq.length + data.length)
     if (bufferReq.includes('\r\n\r\n')) {
@@ -57,19 +57,15 @@ const dataEventHandler = (socket) => {
 const requestHandler = (req, res, body) => {
   if (req.method === 'POST') {
     req.body = body
-    [req] = parserFactory(parseJSON, parseURLEncoded, parsePlainText, parseMultipart)(req)
+    req = parserFactory(parseJSON, parseURLEncoded, parsePlainText, parseMultipart)(req)
   }
   routes[req.method][req.url](req, res)
 }
 
 const parserFactory = (...parsers) => req => {
   return parsers.reduce((accum, parser) => {
-    let val = parser(req)
-    if (val !== null) {
-      accum.push(val)
-    }
-    return accum
-  }, [])
+    return accum === null ? parser(req) : accum
+  }, null)
 }
 
 const addRoutes = (method, route, cb) => {
