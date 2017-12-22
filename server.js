@@ -1,4 +1,6 @@
 const net = require('net')
+const fs = require('fs')
+const path = require('path')
 const {createResponse} = require('./response')
 const {createRequest} = require('./request')
 const {parseJSON, parseURLEncoded, parseMultipart, parsePlainText} = require('./bodyParser')
@@ -14,7 +16,7 @@ const createServer = (port) => {
     socket.on('end', () => {
       console.log('Client Disconnected')
     })
-    socket.setTimeout(50000)
+    socket.setTimeout(20000)
     socket.on('timeout', () => {
       console.log('Socket Timeout')
       socket.end()
@@ -44,7 +46,6 @@ const dataEventHandler = (socket) => {
       if (parseInt(req.headers['Content-Length']) === bufferBody.length ||
       req.headers['Content-Length'] === undefined) {
         let res = createResponse(socket)
-
         requestHandler(req, res, bufferBody)
         bufferReq = Buffer.from([])
         bufferBody = Buffer.from([])
@@ -60,7 +61,6 @@ const requestHandler = (req, res, body) => {
     req.body = body
     req = parserFactory(parseJSON, parseURLEncoded, parsePlainText, parseMultipart)(req)
   }
-
   routes[req.method][req.url](req, res)
 }
 
@@ -80,7 +80,18 @@ const addRoutes = (method, route, cb) => {
   }
 }
 const staticFileHandler = dir => {
-  
+  let directory = path.join(__dirname, dir)
+  fs.readdirSync(directory).map(file => {
+    let body = fs.readFileSync(path.join(directory, file), (err, data) => {
+      if (err) throw err
+      return data
+    })
+    routes['GET']['/' + file] = (req, res) => {
+      res.setHeader('Content-Type', 'plain/html')
+      res.write(body)
+      res.end()
+    }
+  })
 }
 
 const getHeaderAndBody = data => {
@@ -91,5 +102,6 @@ const getHeaderAndBody = data => {
 
 module.exports = {
   createServer,
-  addRoutes
+  addRoutes,
+  staticFileHandler
 }
