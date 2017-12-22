@@ -40,39 +40,47 @@ const parseMultipart = req => {
 }
 
 const getParts = req => {
-  let index = req.headers['Content-Type'].indexOf('=')
-  let boundary = req.headers['Content-Type'].slice(index + 1)
-  let tempBody = req.body
-  let arr = []
-  while (tempBody.indexOf('--' + boundary + '--') > 0) {
-    let chunk = tempBody.slice(boundary.length + 4, tempBody.indexOf('--' +
-    boundary, boundary.length + 4))
-    arr.push(chunk)
-    tempBody = tempBody.slice(boundary.length + 4 + chunk.length)
-  }
-  return [arr, boundary]
+  let ct = req.headers['Content-Type']
+  let boundary = compose(getBoundary, getIndex)([ct, '='])
+  return getAllboundaryData(req.body)(boundary)
 }
 
-const parseParts = ([arr, boundary]) => {
-  let files = {}, fname = ''
-  let parsedBody = arr.reduce((accum, a) => {
-    let header = a.slice(0, a.indexOf('\r\n\r\n')).toString('utf-8').split('\r\n')
-    let body = a.slice(a.indexOf('\r\n\r\n') + 4)
-    if (header[0].includes('filename')) {
-      [files, fname] = getKeyValue(header[0], body)
-      accum.filenames.push(fname)
-    } else {
-      let key = header[0].slice(header[0].indexOf('=') + 1)
-      accum[key.slice(1, key.length - 1)] = body
-    }
-    return accum
-  }, {
-    filenames: []
-  })
+const getIndex = ([ct, elem]) => [ct, ct.indexOf(elem)]
+const getBoundary = ([ct, index]) => ct.slice(index + 1)
+
+const getAllboundaryData = temp => boundary => {
+  let arr = []
+  while (temp.indexOf('--' + boundary + '--') > 0) {
+    let chunk = temp.slice(boundary.length + 4, temp.indexOf('--' +
+    boundary, boundary.length + 4))
+    arr.push(chunk)
+    temp = temp.slice(boundary.length + 4 + chunk.length)
+  }
+  return arr
+}
+
+const parseParts = arr => {
+  let files = {}
+  let parsedBody = arr.reduce((accum, a) => parseFile(accum)(a)(files),
+  {filenames: []})
   return [parsedBody, files]
 }
 
-const getKeyValue = (data, body) => {
+const parseFile = accum => a => files => {
+  let fname = ''
+  let header = a.slice(0, a.indexOf('\r\n\r\n')).toString('utf-8').split('\r\n')
+  let body = a.slice(a.indexOf('\r\n\r\n') + 4)
+  if (header[0].includes('filename')) {
+    [files, fname] = getKeyValue(header[0])(body)
+    accum.filenames.push(fname)
+  } else {
+    let key = header[0].slice(header[0].indexOf('=') + 1)
+    accum[key.slice(1, key.length - 1)] = body
+  }
+  return accum
+}
+
+const getKeyValue = data => body => {
   let obj = {}
   let key = data.slice(data.indexOf('=') + 2, data.lastIndexOf(';') - 1)
   let val = data.slice(data.indexOf('filename') + 10, data.lastIndexOf('"'))
