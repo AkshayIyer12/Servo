@@ -30,7 +30,6 @@ const dataEventHandler = (socket) => {
   let flag = false
   let req
   socket.on('data', data => {
-    console.log(data)
     if (flag) {
       bufferBody = Buffer.concat([bufferBody, data], bufferBody.length + data.length)
     }
@@ -72,7 +71,16 @@ const parserFactory = (...parsers) => req => {
 }
 
 const addRoutes = (method, route, cb) => {
-  routes[method][route] = cb
+  if (Array.isArray(route)) {
+    route.forEach(r => {
+      routes[method][r] = cb
+    })
+  } else {
+    routes[method][route] = cb
+  }
+}
+const staticFileHandler = dir => {
+  
 }
 
 const getHeaderAndBody = data => {
