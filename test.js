@@ -1,6 +1,7 @@
 let http = require('./server')
 http.createServer(4000)
 
+http.staticFileHandler('public')
 http.addRoutes('GET', '/', (req, res) => {
   res.write('<h1>Geekskool</h1>')
   res.write('<p>Ping!!! You made a GET Request</p>')
