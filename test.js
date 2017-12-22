@@ -6,7 +6,10 @@ http.addRoutes('GET', '/', (req, res) => {
   res.write('<p>Ping!!! You made a GET Request</p>')
   res.end()
 })
-
+http.addRoutes('GET', ['/login', '/logout'], (req, res) => {
+  res.write('This is common for all routes')
+  res.end()
+})
 http.addRoutes('POST', '/', (req, res) => {
   res.write('Hello Monday Morning!')
   res.setHeader('Content-Type', 'text/plain')
