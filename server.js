@@ -8,7 +8,7 @@ const routes = {
   'GET': {},
   'POST': {}
 }
-
+let middlewareArr = []
 const createServer = (port) => {
   let server = net.createServer(socket => {
     console.log('client connected')
@@ -57,11 +57,18 @@ const dataEventHandler = (socket) => {
 }
 
 const requestHandler = (req, res, body) => {
+  req.handlers = [...middlewareArr]
+  req.handlers.push(routes[req.method][req.url])
   if (req.method === 'POST') {
     req.body = body
     req = parserFactory(parseJSON, parseURLEncoded, parsePlainText, parseMultipart)(req)
   }
-  routes[req.method][req.url](req, res)
+  next(req, res)
+}
+
+const next = (req, res) => {
+  let handler = req.handlers.shift()
+  handler(req, res, next)
 }
 
 const parserFactory = (...parsers) => req => {
@@ -79,19 +86,26 @@ const addRoutes = (method, route, cb) => {
     routes[method][route] = cb
   }
 }
-const staticFileHandler = dir => {
-  let directory = path.join(__dirname, dir)
-  fs.readdirSync(directory).map(file => {
-    let body = fs.readFileSync(path.join(directory, file), (err, data) => {
-      if (err) throw err
-      return data
-    })
-    routes['GET']['/' + file] = (req, res) => {
-      res.setHeader('Content-Type', 'plain/html')
-      res.write(body)
-      res.end()
+
+const use = v => middlewareArr.push(v)
+
+const staticFileHandler = file => (req, res, next) => {
+  let url = path.join(__dirname, file, req.url)
+  fs.readFile(url, (err, data) => {
+    if (err) {
+      next(req, res)
+      return
     }
+    let body = data.toString()
+    res.write(body)
+    res.setHeader('Content-Type', 'text/html')
+    res.end()
   })
+}
+
+const logger = (req, res, next) => {
+  console.log(req)
+  next(req, res)
 }
 
 const getHeaderAndBody = data => {
@@ -103,5 +117,7 @@ const getHeaderAndBody = data => {
 module.exports = {
   createServer,
   addRoutes,
-  staticFileHandler
+  staticFileHandler,
+  use,
+  logger
 }
