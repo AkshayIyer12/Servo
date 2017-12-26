@@ -1,6 +1,5 @@
 const net = require('net')
 const fs = require('fs')
-const path = require('path')
 const {createResponse} = require('./response')
 const {createRequest} = require('./request')
 const {parseJSON, parseURLEncoded, parseMultipart, parsePlainText} = require('./bodyParser')
@@ -61,7 +60,6 @@ const requestHandler = (req, res, body) => {
   req.handlers.push(methodHandler)
   if (req.method === 'POST') {
     req.body = body
-    req = parserFactory(parseJSON, parseURLEncoded, parsePlainText, parseMultipart)(req)
   }
   next(req, res)
 }
@@ -71,24 +69,15 @@ const methodHandler = (req, res, next) => {
     routes[req.method][req.url](req, res)
   } else {
     res.setStatus(404)
-    fs.readFile('./notFound.html', (err, data) => {
-      if (err) throw err
-      res.write(data)
-      res.setHeader('Content-Type', 'text/html')
-      res.end()
-    })
+    res.write('<h1>Resource Not Found!!!</h1>')
+    res.setHeader('Content-Type', 'text/html')
+    res.end()
   }
 }
 
 const next = (req, res) => {
   let handler = req.handlers.shift()
   handler(req, res, next)
-}
-
-const parserFactory = (...parsers) => req => {
-  return parsers.reduce((accum, parser) => {
-    return accum === null ? parser(req) : accum
-  }, null)
 }
 
 const addRoutes = (method, route, cb) => {
@@ -102,20 +91,6 @@ const addRoutes = (method, route, cb) => {
 }
 
 const use = v => middlewareArr.push(v)
-
-const staticFileHandler = file => (req, res, next) => {
-  let url = path.join(__dirname, file, req.url)
-  fs.readFile(url, (err, data) => {
-    if (err) {
-      next(req, res)
-      return
-    }
-    let body = data.toString()
-    res.write(body)
-    res.setHeader('Content-Type', 'text/html')
-    res.end()
-  })
-}
 
 const logger = (req, res, next) => {
   console.log(req)
@@ -131,7 +106,6 @@ const getHeaderAndBody = data => {
 module.exports = {
   createServer,
   addRoutes,
-  staticFileHandler,
   use,
   logger
 }
