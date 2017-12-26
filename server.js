@@ -58,12 +58,26 @@ const dataEventHandler = (socket) => {
 
 const requestHandler = (req, res, body) => {
   req.handlers = [...middlewareArr]
-  req.handlers.push(routes[req.method][req.url])
+  req.handlers.push(methodHandler)
   if (req.method === 'POST') {
     req.body = body
     req = parserFactory(parseJSON, parseURLEncoded, parsePlainText, parseMultipart)(req)
   }
   next(req, res)
+}
+
+const methodHandler = (req, res, next) => {
+  if (routes[req.method].hasOwnProperty(req.url)) {
+    routes[req.method][req.url](req, res)
+  } else {
+    res.setStatus(404)
+    fs.readFile('./notFound.html', (err, data) => {
+      if (err) throw err
+      res.write(data)
+      res.setHeader('Content-Type', 'text/html')
+      res.end()
+    })
+  }
 }
 
 const next = (req, res) => {
