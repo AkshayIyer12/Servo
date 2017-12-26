@@ -1,22 +1,19 @@
-const compose = (f, g) => x => f(g(x))
 
-const parseJSON = req => {
+const parseJSON = (req, res, next) => {
   if (req.headers['Content-Type'] === 'application/json') {
     req.body = JSON.parse(req.body.toString())
-    return req
   }
-  return null
+  next(req, res)
 }
 
-const parsePlainText = req => {
+const parsePlainText = (req, res, next) => {
   if (req.headers['Content-Type'] === 'text/plain') {
     req.body = req.body.toString()
-    return req
   }
-  return null
+  next(req, res)
 }
 
-const parseURLEncoded = req => {
+const parseURLEncoded = (req, res, next) => {
   if (req.headers['Content-Type'] === 'application/x-www-form-urlencoded') {
     let data = req.body.toString().split('&').reduce((accum, v) => {
       let val = v.split('=')
@@ -24,20 +21,21 @@ const parseURLEncoded = req => {
       return accum
     }, {})
     req.body = data
-    return req
   }
-  return null
+  next(req, res)
 }
 
-const parseMultipart = req => {
+const parseMultipart = (req, res, next) => {
   if (req.headers['Content-Type'].slice(0, 19) === 'multipart/form-data') {
     let [body, files] = compose(parseParts, getParts)(req)
     req.body = body
     req.files = files
-    return req
   }
-  return null
+  next(req, res)
 }
+
+const compose = (f, g) => x => f(g(x))
+
 
 const getParts = req => {
   let ct = req.headers['Content-Type']
@@ -89,8 +87,8 @@ const getKeyValue = data => body => {
 }
 
 module.exports = {
+  parsePlainText,
   parseJSON,
   parseURLEncoded,
-  parseMultipart,
-  parsePlainText
+  parseMultipart
 }
