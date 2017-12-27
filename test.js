@@ -1,8 +1,12 @@
-let http = require('./server')
-http.createServer(4000)
+const http = require('./server')
+const bodyParser = require('./bodyParser')
+const {staticFileHandler} = require('./staticFileHandler')
 
-http.use(http.staticFileHandler('public'))
+http.createServer(4000)
 http.use(http.logger)
+http.use(staticFileHandler('public'))
+http.use(bodyParser.parseMultipart)
+
 http.addRoutes('GET', '/', (req, res) => {
   res.write('<h1>Geekskool</h1>')
   res.write('<p>Ping!!! You made a GET Request</p>')
@@ -19,7 +23,7 @@ http.addRoutes('POST', '/', (req, res) => {
   res.end()
 })
 
-http.addRoutes('GET', '/user', (req, res) => {
+http.addRoutes('GET', '/user/:Userid/task/:taskId', (req, res) => {
   res.write(JSON.stringify({status: 'error', message: 'Error Message'}))
   res.end()
 })
