@@ -65,14 +65,41 @@ const requestHandler = (req, res, body) => {
 }
 
 const methodHandler = (req, res, next) => {
+  req.params = generateParams(req)
   if (routes[req.method].hasOwnProperty(req.url)) {
-    routes[req.method][req.url](req, res)
-  } else {
-    res.setStatus(404)
-    res.write('<h1>Resource Not Found!!!</h1>')
-    res.setHeader('Content-Type', 'text/html')
-    res.end()
+      routes[req.method][req.url](req, res)
   }
+  if (routes[req.method].hasOwnProperty(req.params[req.url])) {
+    routes[req.method][req.params[req.url]](req, res)
+  } else {
+      res.setStatus(404)
+      res.write('<h1>Resource Not Found!!!</h1>')
+      res.setHeader('Content-Type', 'text/html')
+      res.end()
+  }
+}
+
+const generateParams = req => {
+  return Object.keys(routes[req.method])
+  .reduce((accum, val) => {
+    let routeURL = val.split('/')
+    let reqURL = req.url.split('/')
+    if (routeURL.length === reqURL.length) {
+      for (let i = 1; i < reqURL.length; i++) {
+        if (routeURL[i][0] === ':') {
+          if (reqURL[i-1] === routeURL[i-1]) {
+            let key = routeURL[i].slice(1, routeURL[i].length)
+            let val = reqURL[i]
+            accum[key] = val
+            let fullReqURL = reqURL.join('/')
+            let fullRouteURL = routeURL.join('/')
+            accum[fullReqURL] = fullRouteURL
+          }
+        }
+      }
+    }
+    return accum
+  }, {})
 }
 
 const next = (req, res) => {
@@ -93,7 +120,7 @@ const addRoutes = (method, route, cb) => {
 const use = v => middlewareArr.push(v)
 
 const logger = (req, res, next) => {
-  console.log(req)
+  console.log(req.handlers)
   next(req, res)
 }
 
