@@ -8,6 +8,7 @@ const routes = {
   'POST': {}
 }
 let middlewareArr = []
+
 const createServer = (port) => {
   let server = net.createServer(socket => {
     console.log('client connected')
@@ -100,25 +101,26 @@ const callRouteCB = ([req, res]) => {
 
 const generateParams = req => {
   return Object.keys(routes[req.method])
-  .reduce((accum, val) => {
-    let routeURL = val.split('/')
-    let reqURL = req.url.split('/')
-    if (routeURL.length === reqURL.length) {
-      for (let i = 1; i < reqURL.length; i++) {
-        if (routeURL[i][0] === ':') {
-          if (reqURL[i-1] === routeURL[i-1]) {
-            let key = routeURL[i].slice(1, routeURL[i].length)
-            let val = reqURL[i]
-            accum[key] = val
-            let fullReqURL = reqURL.join('/')
-            let fullRouteURL = routeURL.join('/')
-            accum[fullReqURL] = fullRouteURL
-          }
-        }
-      }
-    }
-    return accum
-  }, {})
+         .reduce((accum, val) => matchURL(accum)(val)(req), {})
+}
+
+const matchURL = accum => val => req => {
+ let routeURL = val.split('/')
+ let reqURL = req.url.split('/')
+  if (routeURL.length === reqURL.length) parseURL(accum)(val)(req)(routeURL)(reqURL)
+ return accum
+}
+
+const parseURL = accum => val => req => routeURL => reqURL => {
+  for (let i = 1; i < reqURL.length; i++) {
+     if (routeURL[i][0] === ':') {
+       if (reqURL[i-1] === routeURL[i-1] || routeURL[i-1][0] === ':') {
+         accum[routeURL[i].slice(1, routeURL[i].length)] = reqURL[i]
+         accum[req.url] = val
+       }
+     }
+  }
+  return accum
 }
 
 const next = (req, res) => {
