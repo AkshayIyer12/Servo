@@ -64,18 +64,37 @@ const requestHandler = (req, res, body) => {
   next(req, res)
 }
 
-const methodHandler = (req, res, next) => {
+const compose = (f, g) => (x, v) => f(g(x, v))
+
+const methodHandler = (req, res, next) => compose(callRouteCB, compose(setParamURL, setParam))(req, res)
+
+const errorHandler = res => {
+  res.setStatus(404)
+  res.write('<h1>Resource Not Found!!!</h1>')
+  res.setHeader('Content-Type', 'text/html')
+  res.end()
+}
+
+const setParam = (req, res) => {
   req.params = generateParams(req)
+  return [req, res]
+}
+
+const setParamURL = ([req, res]) => {
+  req.param_url = {}
+  req.param_url[req.url] = req.params[req.url]
+  delete req.params[req.url]
+  return [req, res]
+}
+
+const callRouteCB = ([req, res]) => {
   if (routes[req.method].hasOwnProperty(req.url)) {
-      routes[req.method][req.url](req, res)
+    routes[req.method][req.url](req, res)
   }
-  if (routes[req.method].hasOwnProperty(req.params[req.url])) {
-    routes[req.method][req.params[req.url]](req, res)
+  if (routes[req.method].hasOwnProperty(req.param_url[req.url])) {
+    routes[req.method][req.param_url[req.url]](req, res)
   } else {
-      res.setStatus(404)
-      res.write('<h1>Resource Not Found!!!</h1>')
-      res.setHeader('Content-Type', 'text/html')
-      res.end()
+    errorHandler(res)
   }
 }
 
@@ -120,7 +139,7 @@ const addRoutes = (method, route, cb) => {
 const use = v => middlewareArr.push(v)
 
 const logger = (req, res, next) => {
-  console.log(req.handlers)
+  console.log(req)
   next(req, res)
 }
 
