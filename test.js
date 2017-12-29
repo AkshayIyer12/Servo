@@ -4,7 +4,6 @@ const {staticFileHandler} = require('./staticFileHandler')
 
 http.createServer(4000)
 http.use(http.logger)
-http.use(staticFileHandler('public'))
 http.use(bodyParser.parseMultipart)
 
 http.addRoutes('GET', '/', (req, res) => {
@@ -12,6 +11,7 @@ http.addRoutes('GET', '/', (req, res) => {
   res.write('<p>Ping!!! You made a GET Request</p>')
   res.end()
 })
+
 http.addRoutes('GET', ['/login', '/logout'], (req, res) => {
   res.write('This is common for all routes')
   res.end()
@@ -24,7 +24,13 @@ http.addRoutes('POST', '/', (req, res) => {
 })
 
 http.addRoutes('GET', '/user/:Userid/task/:taskId', (req, res) => {
-  res.write(JSON.stringify({status: 'error', message: 'Error Message'}))
+  console.log('I got some param! :\n', req.params)
+  res.write(JSON.stringify({status: 'success', message: 'Success message'}))
+  res.end()
+})
+
+http.addRoutes('GET', '/task/:taskId/user/:userId', (req, res) => {
+  res.write(JSON.stringify({status: 'error', message: 'Error message'}))
   res.end()
 })
 
