@@ -1,8 +1,6 @@
 const net = require('net')
-const fs = require('fs')
-const {createResponse} = require('./response')
-const {createRequest} = require('./request')
-const {parseJSON, parseURLEncoded, parseMultipart, parsePlainText} = require('./bodyParser')
+const { createResponse } = require('./response')
+const { createRequest } = require('./request')
 const routes = {
   'GET': {},
   'POST': {}
@@ -13,16 +11,16 @@ const createServer = (port) => {
   let server = net.createServer(socket => {
     console.log('client connected')
     dataEventHandler(socket)
-    socket.on('end', () => {
-      console.log('Client Disconnected')
-    })
+    socket.on('end', () => console.log('Client Disconnected'))
     socket.setTimeout(20000)
     socket.on('timeout', () => {
       console.log('Socket Timeout')
       socket.end()
     })
   })
-  server.on('error', err => { throw err })
+  server.on('error', err => {
+    throw err
+  })
   server.listen(port, () => console.log(`Server bound on ${port}`))
 }
 
@@ -36,24 +34,38 @@ const dataEventHandler = (socket) => {
       bufferBody = Buffer.concat([bufferBody, data], bufferBody.length + data.length)
     }
     bufferReq = Buffer.concat([bufferReq, data], bufferReq.length + data.length)
-    if (bufferReq.includes('\r\n\r\n')) {
-      if (!flag) {
-        let {header, body} = getHeaderAndBody(bufferReq)
-        req = createRequest(header)
-        bufferBody = Buffer.from(body)
-        flag = true
-      }
-      if (parseInt(req.headers['Content-Length']) === bufferBody.length ||
-      req.headers['Content-Length'] === undefined) {
-        let res = createResponse(socket)
-        requestHandler(req, res, bufferBody)
-        bufferReq = Buffer.from([])
-        bufferBody = Buffer.from([])
-        flag = false
-        req = {}
-      }
-    }
+    checkCRLFInBufferReq(socket)(bufferReq)(bufferBody)(req)(flag)
   })
+}
+
+const checkCRLFInBufferReq = socket => bufferReq => bufferBody => req => flag => {
+  if (bufferReq.includes('\r\n\r\n')) {
+    if (!flag) {
+      [req, bufferBody, flag] = getReqBufferbodyFlag(bufferReq)(bufferBody)(req)(flag)
+    }
+    if (parseInt(req.headers['Content-Length']) === bufferBody.length ||
+        req.headers['Content-Length'] === undefined) {
+      [req, flag, bufferBody, bufferReq] = actionOnGetOrPost(req)(socket)(bufferReq)(bufferBody)(flag)
+    }
+  }
+}
+
+const getReqBufferbodyFlag = bufferReq => bufferBody => req => flag => {
+  let { header, body } = getHeaderAndBody(bufferReq)
+  req = createRequest(header)
+  bufferBody = Buffer.from(body)
+  flag = true
+  return [req, bufferBody, flag]
+}
+
+const actionOnGetOrPost = req => socket => bufferReq => bufferBody => flag => {
+  let res = createResponse(socket)
+  requestHandler(req, res, bufferBody)
+  bufferReq = Buffer.from([])
+  bufferBody = Buffer.from([])
+  flag = false
+  req = {}
+  return [req, flag, bufferBody, bufferReq]
 }
 
 const requestHandler = (req, res, body) => {
@@ -67,7 +79,9 @@ const requestHandler = (req, res, body) => {
 
 const compose = (f, g) => (x, v) => f(g(x, v))
 
-const methodHandler = (req, res, next) => compose(callRouteCB, compose(setParamURL, setParam))(req, res)
+const methodHandler = (req, res, next) => {
+  return compose(callRouteCB, compose(setParamURL, setParam))(req, res)
+}
 
 const errorHandler = res => {
   res.setStatus(404)
@@ -101,24 +115,26 @@ const callRouteCB = ([req, res]) => {
 
 const generateParams = req => {
   return Object.keys(routes[req.method])
-         .reduce((accum, val) => matchURL(accum)(val)(req), {})
+    .reduce((accum, val) => matchURL(accum)(val)(req), {})
 }
 
 const matchURL = accum => val => req => {
- let routeURL = val.split('/')
- let reqURL = req.url.split('/')
-  if (routeURL.length === reqURL.length) parseURL(accum)(val)(req)(routeURL)(reqURL)
- return accum
+  let routeURL = val.split('/')
+  let reqURL = req.url.split('/')
+  if (routeURL.length === reqURL.length) {
+    parseURL(accum)(val)(req)(routeURL)(reqURL)
+  }
+  return accum
 }
 
 const parseURL = accum => val => req => routeURL => reqURL => {
   for (let i = 1; i < reqURL.length; i++) {
-     if (routeURL[i][0] === ':') {
-       if (reqURL[i-1] === routeURL[i-1] || routeURL[i-1][0] === ':') {
-         accum[routeURL[i].slice(1, routeURL[i].length)] = reqURL[i]
-         accum[req.url] = val
-       }
-     }
+    if (routeURL[i][0] === ':') {
+      if (reqURL[i - 1] === routeURL[i - 1] || routeURL[i - 1][0] === ':') {
+        accum[routeURL[i].slice(1, routeURL[i].length)] = reqURL[i]
+        accum[req.url] = val
+      }
+    }
   }
   return accum
 }
@@ -141,14 +157,14 @@ const addRoutes = (method, route, cb) => {
 const use = v => middlewareArr.push(v)
 
 const logger = (req, res, next) => {
-  console.log(req)
+  console.log('Logger Activated!: \n', req)
   next(req, res)
 }
 
 const getHeaderAndBody = data => {
   let header = data.slice(0, data.indexOf('\r\n\r\n'))
   let body = data.slice(data.indexOf('\r\n\r\n') + 4)
-  return {header, body}
+  return { header, body }
 }
 
 module.exports = {
