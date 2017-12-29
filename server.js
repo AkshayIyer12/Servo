@@ -43,8 +43,8 @@ const checkCRLFInBufferReq = socket => bufferReq => bufferBody => req => flag =>
     if (!flag) {
       [req, bufferBody, flag] = getReqBufferbodyFlag(bufferReq)(bufferBody)(req)(flag)
     }
-    if (parseInt(req.headers['Content-Length']) === bufferBody.length ||
-        req.headers['Content-Length'] === undefined) {
+    let ctl = req.headers['Content-Length']
+    if (parseInt(ctl) === bufferBody.length || ctl === undefined) {
       [req, flag, bufferBody, bufferReq] = actionOnGetOrPost(req)(socket)(bufferReq)(bufferBody)(flag)
     }
   }
